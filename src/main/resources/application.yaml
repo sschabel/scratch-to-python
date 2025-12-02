@@ -1,0 +1,8 @@
+spring:
+  application:
+    name: scratch-to-python
+  main:
+    banner-mode: off
+logging:
+  threshold:
+    console: 'OFF'
