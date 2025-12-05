@@ -17,3 +17,5 @@ buildNumber.properties
 .classpath
 # Spring Boot log files are in the directory by default
 *.log
+.factorypath
+.settings
