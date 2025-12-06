@@ -13,6 +13,8 @@ buildNumber.properties
 # Eclipse m2e generated files
 # Eclipse Core
 .project
+# IntelliJ
+.idea
 # JDT-specific (Eclipse Java Development Tools)
 .classpath
 # Spring Boot log files are in the directory by default
