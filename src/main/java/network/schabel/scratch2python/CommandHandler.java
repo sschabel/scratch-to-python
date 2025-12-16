@@ -2,10 +2,9 @@ package network.schabel.scratch2python;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
+import lombok.extern.slf4j.Slf4j;
 import network.schabel.scratch2python.models.*;
 import org.springframework.shell.standard.ShellComponent;
 import org.springframework.shell.standard.ShellMethod;
@@ -15,6 +14,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 
+@Slf4j
 @ShellComponent
 public class CommandHandler {
 
@@ -44,47 +44,48 @@ public class CommandHandler {
 
   protected StringBuilder parseBlocks(JsonNode blocks, StringBuilder bldr) {
     Iterator<String> fields = blocks.fieldNames();
-//    System.out.println("Printing all fields within the blocks object...");
-//    fields.forEachRemaining(System.out::println);
-//    System.out.println("All fields printed!");
 
-    List<JsonNode> topNodes = new ArrayList<>();
-    List<JsonNode> childNodes = new ArrayList<>();
+    HashMap<String, JsonNode> topNodes = new HashMap<>();
+    HashMap<String, JsonNode> childNodes = new HashMap<>();
 
     fields.forEachRemaining((field) -> {
       JsonNode node = blocks.get(field);
       if (node != null) {
-          System.out.println("Block " + field + " is not null");
+          log.info("Block " + field + " is not null");
         if (node.get(TOP_LEVEL).asBoolean()) {
-          topNodes.add(node);
+          topNodes.put(field, node);
         } else {
-          childNodes.add(node);
+          childNodes.put(field, node);
         }
       } else {
-          System.out.println("Block " + field + " is null");
+          log.info("Block " + field + " is null");
       }
     });
 
-    for (JsonNode topNode : topNodes) {
-        bldr = processNode(topNode, childNodes, bldr);
+    for (String nodeId : topNodes.keySet()) {
+        JsonNode topNode = topNodes.get(nodeId);
+        bldr = processNode(nodeId, topNode, childNodes, bldr);
     }
 
     return bldr;
   }
 
-  protected StringBuilder processNode(JsonNode node, List<JsonNode> childNodes, StringBuilder bldr) {
+  protected StringBuilder processNode(String nodeId, JsonNode node, Map<String, JsonNode> childNodes, StringBuilder bldr) {
     Block block = convertToBlock(node);
+    block.setId(nodeId);
     List<Block> childBlocks = new ArrayList<>();
-    childNodes.forEach((childNode) -> {
-        childBlocks.add(convertToBlock(childNode));
+    childNodes.keySet().forEach((childNodeId) -> {
+        Block childBlock = convertToBlock(childNodes.get(childNodeId));
+        childBlock.setId(childNodeId);
+        childBlocks.add(childBlock);
     });
-    return block.generatePython(childBlocks, bldr);
+    return block.generatePython(0, childBlocks, bldr);
   }
 
   protected Block convertToBlock(JsonNode node) {
       ObjectMapper mapper = new ObjectMapper();
       BlockType blockType = BlockType.fromDescription((node.get(OP_CODE).asText()));
-      System.out.println("Block " + node.get(OP_CODE).asText() + " being converted...");
+      log.info("Block " + node.get(OP_CODE).asText() + " being converted...");
       return switch (blockType) {
           case BlockType.CONTROL_FOREVER -> mapper.convertValue(node, ForeverBlock.class);
           case BlockType.CONTROL_IF_ELSE -> mapper.convertValue(node, IfElseBlock.class);
@@ -96,7 +97,6 @@ public class CommandHandler {
           case BlockType.OPERATOR_EQUALS -> mapper.convertValue(node, EqualsBlock.class);
           default -> throw new RuntimeException("Unknown block type: " + blockType);
       };
-
   }
 
 }

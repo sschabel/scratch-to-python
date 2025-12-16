@@ -3,6 +3,6 @@ spring:
     name: scratch-to-python
   main:
     banner-mode: off
-logging:
-  threshold:
-    console: 'OFF'
+#logging:
+#  threshold:
+#    console: 'OFF'
